@@ -3,15 +3,15 @@ import Login from './components/Login/Login';
 import Dashboard from './components/Dashboard/Dashboard';
 import { api } from './lib/api';
 
+import { usePresence } from './hooks/usePresence';
+
 function App() {
   const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    // Initial ping to backend
-    api('/')
-      .then(data => console.log('Backend status:', data))
-      .catch(err => console.error('Backend connection issue:', err));
+  // Track player presence (runs at App level so it's independent of any page/component)
+  usePresence(user?.playerid);
 
+  useEffect(() => {
     // Check for existing session
     const savedSession = localStorage.getItem('auth_session');
     if (savedSession) {
@@ -33,6 +33,23 @@ function App() {
     setUser(userData);
   };
 
+  const handleUserUpdate = (updatedUserData) => {
+    const newUser = { ...user, ...updatedUserData };
+    setUser(newUser);
+
+    // Update saved session
+    const savedSession = localStorage.getItem('auth_session');
+    if (savedSession) {
+      try {
+        const session = JSON.parse(savedSession);
+        session.user = newUser;
+        localStorage.setItem('auth_session', JSON.stringify(session));
+      } catch (err) {
+        console.error('Failed to update session:', err);
+      }
+    }
+  };
+
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('auth_session');
@@ -41,7 +58,7 @@ function App() {
   return (
     <div className="App">
       {user ? (
-        <Dashboard user={user} onLogout={handleLogout} />
+        <Dashboard user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />
       ) : (
         <Login onSuccess={handleLoginSuccess} />
       )}

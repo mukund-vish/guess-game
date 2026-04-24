@@ -2,11 +2,12 @@ const BASE = import.meta.env.VITE_WORKER_URL;
 
 export async function api(path, options = {}) {
     const method = path === '/' ? 'GET' : 'POST';
+    const isFormData = options.body instanceof FormData;
     const fetchOptions = {
         method,
         ...options,
         headers: {
-            'Content-Type': 'application/json',
+            ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
             ...(options.headers || {}),
         },
     };
